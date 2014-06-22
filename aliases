@@ -1,0 +1,47 @@
+# = Alias Linux =
+# version 1.01
+# vim: set syntax=sh ts=2 sw=2:
+##{{{Machine Linux
+if [ "$(uname -s)" = "Linux" ] ; then
+	test -x /usr/bin/ionice && alias apt-get='ionice -c3 /usr/bin/apt-get'
+	alias vmware='vmware-server-console -l'
+	alias apt-cache='sudo ionice -c3 nice --adjustment=18 /usr/bin/apt-cache'
+	alias mail='mail -u glennie'
+	alias mkdlocate='/etc/cron.daily/dlocate'
+	alias nslookup='host'
+	alias sa-lint='export LANG=C; export LANGUAGE=C; export LC_ALL=C ; spamassassin --lint'
+	alias Syslog='tail /var/log/syslog'
+	alias Vyslog='vi + /var/log/syslog'
+	alias Tsyslog='tail -f /var/log/syslog'
+	alias fortune='fortune -a fr'
+	alias dict='dictl'
+	alias unutf='recode UTF-8..ISO-8859-15'
+	alias 2utf8='recode ISO-8859-15..UTF-8'
+	alias vmware='vmware-server-console &'
+	alias offScreen='xset dpms force off'
+  alias winexe='winexe --authentication-file=/home/glennie/.smb.conf'
+  alias GIT="cd ~glennie/git ; git pull; ssh nemesis 'cd /home/glennie/git ; git pull > /dev/null 2>&1'"
+  alias gdb='gdb -q'
+fi
+#}}}
+
+#{{{Machine Solaris
+if [ "$(uname -s)" = "SunOS" ] ; then
+	echo > /dev/null
+fi
+#}}}
+
+#{{{Toutes les machines
+alias df='df -kh'
+alias icdp='cd ..'
+alias egrep='egrep --color=auto'
+alias free='free -m'
+alias grep='grep --color=auto'
+alias	ll='ls -alh --color=auto'
+alias	ls='ls --color=auto'
+alias vi='vim'
+alias lo='ls -lh | sed -e 's/--x/1/g' -e 's/-w-/2/g' -e 's/-wx/3/g' -e 's/r--/4/g' -e 's/r-x/5/g' -e 's/rw-/6/g' -e 's/rwx/7/g' -e 's/---/0/g''
+alias reloadHistory='history -a; history -r'
+alias 'ip6=ip -6'
+alias 'sudo=sudo '
+#}}}

@@ -1,0 +1,27 @@
+#
+#  MIME types and programs that process those types
+
+
+#{{{text/html
+text/html; cat %s | saveAndRun browser ;  nametemplate=%s.html
+text/html; lynx -unique_urls  -assume_charset=%{charset} -dump %s;  nametemplate=%s.html; copiousoutput; 
+#}}}
+
+#{{{ms-tnef
+application/ms-tnef; tnef -w %s
+#}}}
+
+#{{{pdf
+application/pdf; okular '%s'
+application/pdf; pdftotext %s -; copiousoutput
+#}}}
+
+#{{{images
+image/*; kolourpaint %s; nametemplate=%s
+image/gif; kolourpaint %s; nametemplate=%s
+#}}}
+
+#{{{pgp
+application/pgp-signature; cat
+application/pgp-signature;  cat ;  copiousoutput
+#}}}

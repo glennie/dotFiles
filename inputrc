@@ -1,0 +1,32 @@
+# /etc/inputrc - global inputrc for libreadline
+# See readline(3readline) and `info rluserman' for more information.
+#
+#
+#
+$include /etc/inputrc
+
+set audible-bell none
+set bell-style none
+set completion-query-items 50
+set convert-meta off
+set editing-mode vi
+set enable-keypad on
+set expand-tilde on 
+set input-meta on
+set keymap vi
+set mark-directories on
+set mark-modified-lines off
+set mark-symlinked-directories On
+set match-hidden-files on
+set meta-flag on
+set output-meta on
+set print-completions-horizontally on
+set show-all-if-ambiguous on
+set visible-stats on
+set completion-ignore-case on
+set show-all-if-ambiguous on
+set show-all-if-unmodified on
+
+M-Control-u: universal-argument
+Control-o: "> output$$"
+"\eh": "\C-a\eb\ed\C-y\e#man \C-y\C-m\C-p\C-p\C-a\C-d\C-e"

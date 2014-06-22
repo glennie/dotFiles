@@ -1,0 +1,451 @@
+# = Quelques fonctions utils =
+# vim: set syntax=sh ts=2 sw=2 filetype=sh:
+# Version 1.0 - 18/09/2008
+
+#{{{ Des fonctions spécifiques aux OS
+if [ "$(uname -s)" = "Linux" ] ; then
+#{{{Les fonctions sur les machines Linux
+
+myip()
+#{{{
+{
+
+# ========================================================================
+# = Cette fonction permet de d'afficher les @ IPs affectÃ©es Ã  la machine =
+# ========================================================================
+
+ for i in $(ifconfig | grep Link | awk '{print $1}')
+  do ip=$(ifconfig $i | grep inet | cut -d: -f2 | cut -d' ' -f1)
+  echo "$i: $ip"
+ done
+unset i ip
+}
+#}}}
+
+findtext()
+#{{{
+{
+
+# ==========================================================
+# = Cette fonction permet d'affichier les fichier conteant =
+# = un mot de faÃ§on rÃ©cursive. La recherche est effectuÃ©e  =
+# = dans le rÃ©pertoire courant si aucun rÃ©pertoire est en  =
+# = en paramÃ©tre.					   =
+# ==========================================================
+
+if [ -d "$2" ] 
+then 
+ SEARCHDIR="$2"
+ SEARCHTEXT="$1"
+elif [ -d "$1" ]
+ then
+  SEARCHDIR="$1"
+  SEARCHTEXT="$2"
+else
+ SEARCHDIR=$PWD
+ SEARCHTEXT="$1"
+fi
+
+if [ "$3" = "d" ]
+then
+ OPTIONS="-iE"
+else
+ OPTIONS="-ilE"
+fi
+
+if [ "$SEARCHTEXT" = "" ]
+ then
+  echo "Le texte Ã  rechercher n'est pas spÃ©cifiÃ©..."
+else
+ find $SEARCHDIR -type f -exec grep $OPTIONS "$SEARCHTEXT" {} \;
+fi
+unset OPTIONS SEARCHTEXT SEARCHDIR 
+}
+#}}}
+
+reloadenv()
+#{{{
+{
+# ===========================================================================
+# = Cette procÃ©dure permet de prendre les modifs survenu dans les variables =
+# = d'envirronements. Id. PATH,MANPATH, .bashrc, /etc/bashrc etc...         =
+# ===========================================================================
+unset PATH MANPATH PERL5LIB
+. /etc/PATH
+. /etc/MANPATH
+. /etc/PERL
+test -f ~/.bash_profile && . ~/.bash_profile > /dev/null 2>&1 3>&1
+}
+#}}}
+
+myedit()
+#{{{
+{
+# ===========================================================
+# = Edition d'un fichier binaire qui se trouve dans le path =
+# ===========================================================
+
+test -z "$1" && return 2
+$EDITOR $(which $1)
+}
+#}}}
+
+ftype()
+#{{{
+{
+# ========================================================
+# = Cette fonction permet d'affichier le type executable =
+# ========================================================
+F_NAME=""
+if [ "$1" != "" ]
+ then
+  echo $1
+  F_NAME=$(which $1 2 > /dev/null)
+  echo $F_NAME
+  test -z $F_NAME || file $F_NAME
+ fi
+}
+#}}}
+
+compil_kde()
+#{{{
+{
+export kde_prefix=/usr
+export sysconfdir=/etc
+export kde_includedir=/usr/include/kde
+export infodir=/usr/share/info
+export mandir=/usr/share/man
+export qtdir=/usr/share/qt3
+export kde_cgidir=/usr/lib/cgi-bin
+export kde_confdir=/etc/kde3
+export kde_htmldir=/usr/share/doc/kde/HTML
+export CONFIG_KDE="--disable-debug --disable-rpath --prefix=$kde_prefix --sysconfdir=$sysconfdir --includedir=$kde_includedir --infodir=$infodir --mandir=$mandir --with-qt-dir=$qtdir"
+echo "CONFIG_KDE: $CONFIG_KDE"
+}
+#}}}
+
+uncompil_kde()
+#{{{
+{
+unset kde_prefix
+unset sysconfdir
+unset kde_includedir
+unset infodir
+unset mandir
+unset qtdir
+unset kde_cgidir
+unset kde_confdir
+unset kde_htmldir
+unset CONFIG_KDE
+}
+#}}}
+
+package()
+#{{{
+{
+  if [ "$1" = "" ] ; then 
+		echo  "Usage: package file"
+		return 2
+	fi
+	dlocate "$1" | awk -F: '{print $1}' | sort -u
+}
+#}}}
+
+update-custom-modules()
+#{{{
+{
+	local OPTIONS="-t -q --no-rebuild"
+	local RECENT_KERNEL_VERSION="$(ls -alrt /boot/initrd.img-* | awk '{print $NF}' | sed 's_/boot/initrd.img-__'g | egrep -v '\.bak$' | tail -n 1)"
+	echo -n "Updating souces..."
+	sudo m-a -t -q update 
+	local MODULES=$(sudo m-a li | grep ' (source) ' | awk '{print $1}')
+	if [ "$1" != "" ] ; then
+		OPTIONS="--kvers-list=$1 $OPTIONS"
+	else
+		OPTIONS="$OPTIONS --kvers-list=$RECENT_KERNEL_VERSION"
+	fi
+	echo "Done."
+	if [ "$MODULES" != "" ] ; then
+		for M in $MODULES ; do
+			echo "Building $M"
+			echo m-a $OPTIONS a-i $M
+		done
+	else
+	 echo "No modules to build!"
+ fi
+}
+#}}}
+
+update_dl_lists()
+#{{{
+{
+	if [ -d /data/miscs/emule ] ; then
+		removedieze
+		test -f /data/miscs/emule/new/dl && cp /data/miscs/emule/new/dl /tmp/.dl
+		TMP_FILE=$(mktemp /tmp/dlupdate.XXXXXX)
+		ls /data/miscs/emule/ | egrep -v '^drwxr-xr-x|^total ' >> /data/miscs/emule/new/dl
+		sort -u -o $TMP_FILE /data/miscs/emule/new/dl && mv $TMP_FILE /data/miscs/emule/new/dl
+	fi
+}	
+#}}}
+
+xtermColors()
+#{{{
+{
+  local _i _start _end _o
+  if [ "$1" != "" ] ; then
+    _start="$1"
+    _end="$1"
+    if [ "$2" != "" ] ; then
+     _end="$2"
+    fi
+    printXtermColor "$_start" "$_end" "COLOR TEST $_start on $_end"
+  else
+    _start="0"
+    _end="256"
+    for _i in $(seq  0 256) ; do 
+      printXtermColor "$_i" "$_i"
+    done
+  fi
+}
+#}}}
+
+printXtermColor()
+#{{{fonction permettant d'afficher les couleurs passé en $1, $2 et le texte en $3
+{
+  local _o
+  _o=00$1
+  echo -en "${_o:${#_o}-3:3} "
+  tput setaf $1
+  tput setab $2
+  printf %30s
+  if [ "$3" != "" ] ; then
+    echo -en "$3"
+  fi
+  printf %30s
+  tput op
+  echo
+}
+#}}}
+
+
+
+#}}}
+elif [ "$(uname -s)" = "SunOS" ] ; then
+#{{{Les fonctions sur les machines Solaris
+rgrep()
+#{{{
+{
+  grep -r $@
+}
+#}}}
+#}}}
+fi
+#}}}
+
+#{{{Les fonctions communes
+rdf()
+#{{{Affiche la taille des répertoires triés
+{ 
+    if [ "$1" = "" ]; then
+        local MY_DIR=$(pwd);
+    else
+        local MY_DIR="$1";
+    fi;
+    if [ ! -d "$MY_DIR" ]; then
+        echo "Le rÃ©pertoire est $MY_DIR est absent";
+        return 2;
+    fi;
+    sudo du -sk "$MY_DIR"/* | sort -n | awk 'BEGIN{ pref[1]="K"; pref[2]="M"; pref[3]="G";} { total = total + $1; x = $1; y = 1; while( x > 1024 ) { x = (x + 1023)/1024; y++; } printf("%g%s\t%s\n",int(x*10)/10,pref[y],$2); } END { y = 1; while( total > 1024 ) { total = (total + 1023)/1024; y++; } printf("Total: %g%s\n",int(total*10)/10,pref[y]); }'
+}
+#}}}
+
+say()
+#{{{
+{
+  mplayer "http://translate.google.com/translate_tts?tl=fr&q=$1"; 
+}
+#}}}
+
+xkcd()
+#{{{Random xkcd image
+{
+  wget -q http://dynamic.xkcd.com/comic/random/ -O - | grep '<img src="http://imgs.xkcd.com/comics' |sed 's/<img src="//' | sed 's/"[a-z]*.*//' | wget -q -i - -O -| display
+}
+#}}}
+
+
+KonsoleEncoding()
+#{{{Change current konsole enconding and LC_ Vars
+{
+  eval $(swapKonsoleEncoding $@)
+
+}
+#}}}
+
+gitConfig()
+#{{{Définition de la config par défaut
+{
+  git config core.sharedrepository 1
+  git config receive.denyNonFastforwards true
+  git config --global user.name "Glennie Vignarajah"
+  git config --global user.email "glennie@glennie.fr"
+  git config --global user.mail "glennie@glennie.fr"
+  git config --global core.quotepath true
+  git config --global core.compression 5
+  git config --global core.excludesfile ~/.git_ignore
+  git config --global branch.autosetupmerge always
+  git config --global fetch.recurseSubmodules true
+  git config --global status.submodulesummary true
+  git config --global core.autocrlf input
+  git config --global core.safecrlf false
+}
+#}}}
+
+MGIT()
+#{{{Updates all git repos including submodules
+{
+  for GDIR in "$HOME/git $HOME/git/perso $HOME/git/configs $HOME/git/docs $HOME/git/encusbkey $HOME/git/scripts" ; do
+    cd $GDIR
+    git pull
+    git merge
+    git submodule foreach --quiet 'git pull; git merge'
+    git submodule foreach --quiet 'git add -A; git commit -a ; git push'
+    git add -A
+    git commit -a
+    git push
+  done
+}
+#}}}
+
+edit()
+#{{{ Edit if $1 is text file
+{
+
+  _file_to_edit=$(which $1 2>/dev/null)
+  if [ "$?"  = "0" -a "$_file_to_edit" != "0" ] ; then
+     if [ -w $_file_to_edit ] ; then
+        if [ "$(file -i "$_file_to_edit" | grep -qi text ; echo $?)" = "0" ] ; then
+          vi $_file_to_edit
+        else
+          echo "$_file_to_edit is not a text file"
+        fi
+     else
+       echo "$_file_to_edit is not writable"
+     fi
+    else
+      echo "unable resolve complete path to $1"
+  fi
+
+}
+
+#}}}
+
+#{{{Les fonctions spécifiques à la machine Garp
+if [ "$(hostname)" = "garp" ] ; then
+ReloadSSHKeys()
+#{{{
+{
+source /tmp/.sshForwardedAgent
+}
+#}}}
+
+3ParConfig()
+#{{{Gestion de la config de connexion vers les baies 3par
+{
+    case "$1" in
+      pa|paris|Paris|PARIS|p) SITE=pa; PASS_SITE="Paris" ; echo "Connexion à la baie de Paris" ;;
+      ly|lyon|Lyon|LYON|l) SITE=ly; PASS_SITE="Lyon" ; echo "Connexion à la baie de Lyon" ;;
+      *) unset TPDSYSNAME; unset TPDPWFILE ; echo "usage 3ParConfig ly|pa|unconfig"; return 0 ;;
+    esac
+
+    if [ -s /autofs/encusbkey/Perso/Ids/.pwFiles/.3par"$PASS_SITE" ] ; then
+      export TPDSYSNAME=$SITE"-3par-f400.intranet.atih.sante.fr"
+      export TPDPWFILE=/autofs/encusbkey/Perso/Ids/.pwFiles/.3par"$PASS_SITE"
+    else
+      echo "Le fichier contenant la clé de connexion n'est accessible!"
+    fi
+}
+#}}}
+
+Net()
+#{{{Wrapper pour la commande net
+{
+  CRED_FILE=/home/glennie/.smb.conf
+  #{{{Peut-o, récupérer le login et le mot de passe et le domaine?
+  if [ -r $CRED_FILE ] ; then
+    NET_USER=$(awk -F= '/^username/ {print $2}' /home/glennie/.smb.conf)
+    NET_PASSWORD="%"$(awk -F= '/^password/ {print $2}' /home/glennie/.smb.conf)
+    NET_DOMAIN=$(awk -F= '/^domain/ {print $2}' /home/glennie/.smb.conf)
+  else
+    NET_USER=glenny
+    NET_PASSWORD=""
+    NET_DOMAIN=ATIH
+  fi
+  #}}}
+
+#{{{Execution de la commande
+    net -S $_HOST -w $NET_DOMAIN -U$NET_USER$NET_PASSWORD "$@"
+#}}}
+}
+#}}}
+
+NetU()
+#{{{Wrapper pour la commande net
+{
+  if  [ "$1" != "" ] ; then
+    _HOST="$1"
+    shift
+  fi
+  CRED_FILE=/home/glennie/.smb.conf
+  #{{{Peut-o, récupérer le login et le mot de passe et le domaine?
+  if [ -r $CRED_FILE ] ; then
+    NET_USER=$(awk -F= '/^username/ {print $2}' /home/glennie/.smb.conf)
+    NET_PASSWORD="%"$(awk -F= '/^password/ {print $2}' /home/glennie/.smb.conf)
+    NET_DOMAIN=$(awk -F= '/^domain/ {print $2}' /home/glennie/.smb.conf)
+  else
+    NET_USER=glenny
+    NET_PASSWORD=""
+    NET_DOMAIN=ATIH
+  fi
+  #}}}
+
+#{{{Execution de la commande
+    net -S $_HOST -w $NET_DOMAIN -U$NET_USER$NET_PASSWORD "$@"
+#}}}
+}
+#}}}
+
+mutt()
+#{{{
+{
+  eval $(swapKonsoleEncoding utf-8)
+  /usr/bin/mutt
+  eval $(swapKonsoleEncoding iso)
+}
+#}}}
+fi
+#}}}
+
+#{{{spécific lyldsvi13
+if [ "$(hostname)" = "lyldsvi13" ] ; then
+setCentreonPassword()
+#{{{
+{
+ read -e -s -p "Centreon password: " CENTREON_PASSWD
+ if [ "$CENTREON_PASSWD" != "" ] ; then
+   export CENTREON_PASSWD
+ else
+   echo "Error: password is empty"
+ fi
+}
+#}}}
+
+unsetCentreonPassword()
+#{{{
+{
+   export CENTREON_PASSWD=''
+}
+#}}}
+fi
+#}}}

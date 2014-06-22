@@ -1,0 +1,52 @@
+[alias]
+  c = commit -am
+  up = pull
+  p = push
+  s = status -s
+  sub = submodule foreach --quiet
+  df = diff --color --color-words --abbrev
+  lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --
+
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	excludesfile = /home/glennie/.git_ignore
+  filemode = false
+	autocrlf = input
+	safecrlf = false
+	quotepath = true
+  compression = 5
+  whitespace = fix,space-before-tab,tab-in-indent,trailing-space
+
+[apply]  
+  whitespace = fix
+
+[user]
+	name = Glennie Vignarajah
+	email = glennie@glennie.fr
+	mail = glennie@glennie.fr
+
+[color]
+	status = auto
+	branch = auto
+	diff = auto
+  ui = always
+
+[branch]
+	autosetupmerge = always
+
+[fetch]
+	recurseSubmodules = true
+
+[status]
+  submodulesummary = true
+
+[merge]
+  log = true
+	defaultToUpstream = true
+[push]
+	default = simple
+[credential]
+	helper = cache --timeout=3600

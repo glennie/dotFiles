@@ -1,0 +1,221 @@
+# vim: syntax=sh si ai:
+
+#{{{ Paramètrage de l'env UNIX - Glennie V. - Version 1.1 - 10/06/2008
+#  * Première version utilisable
+# Glennie V. - Version 1.1 - 17/09/2009
+#  * Récupération du compte pas whoami
+# Glennie V. - Version 1.2 - 18/09/2009
+#  * Chargement des fonctions définies dans .functions
+
+# Glennie V. - Version 1.3 - 17/12/2009
+#  * Fusion de plusieurs versions
+#  Glennie V. - Fusion de /etc/UTILS et .commonrc
+#}}}
+
+#{{{Config commun pour toutes les unices 
+[ -z "$PS1" ] && LOGIN_MODE="NON-INTERACTIF"
+
+#{{{Divers fichier env
+for FILE in /expl/configs/bashrc.config /etc/environment /etc/PATH /etc/MANPATH /etc/PERL /etc/CFLAGS /etc/JAVA /etc/DISTCC /etc/PROXIES ~/.localrc /etc/ALIAS ~/.common /etc/bash_completion ~/.paths ~/.aliases ~/.functions /etc/UTILS /usr/share/bash-completion/bash_completion ~/.binds ~/.locales; do
+ test -f $FILE && test -r $FILE && source $FILE >/dev/null 2>&1
+done
+export PATH
+#}}}
+
+#{{{ Paramètrage en mode interactif
+if [ "$LOGIN_MODE" != "NON-INTERACTIF" ] ; then
+
+#{{{Motd
+	if [ "$SUDO_USER" = "" -a -x /usr/games/cowsay ] ; then
+		echo -e "\n\n"
+		test -x /usr/games/cowsay && /usr/games/cowsay $(/usr/games/fortune -a fr)
+		echo -e "\n"
+	fi
+#}}}
+
+#{{{Les variables d'environnement
+MANPAGER=less
+PAGER=less
+RED="\[\033[1;31m\]"
+NORMAL="\[\033[0;39m\]"
+MYSQL_PS1="\u@$(hostname) \d>\ "
+HISTTIMEFORMAT='%F %T %t'
+LESS="--squeeze-blank-lines --ignore-case --HILITE-UNREAD --line-numbers --raw-control-chars --hilite-search --chop-long-lines"
+GREP_OPTIONS="--color=auto"
+HOSTNAME="$(hostname)"
+EDITOR=vim
+MYSQL_PS1="\u@$(hostname) \d> "
+set -o vi
+shopt -s cmdhist histappend histreedit histverify lithist autocd cdspell checkjobs checkwinsize dirspell  2>/dev/null
+#}}}
+
+#{{{Défintion des variables USER/LOGNAME
+
+#{{{User pour sudo
+if [ "$SUDO_USER" != "" ] ; then
+	USER=$(basename $HOME)
+fi
+#}}}
+
+#{{{USER/LOGNAME
+if [ "$USER" = "" ] ; then
+	export USER="$LOGNAME"
+fi
+if [ "$USER" = "" ] ; then
+  USER=$(whoami)
+  LOGNAME=$(whoami)
+fi
+#}}} 
+#}}}
+
+#{{{Paramètrage de l'historique
+LOCAL_HISTCONTROL='ignoredups:ignorespace:erasedups'
+LOCAL_HISTIGNORE='&::exit:pwd:clear:[ \t]:*glenny*'
+HISTSIZE=100000
+HISTFILESIZE=1000000
+
+#{{{HISTROY: CONTROL
+if [ "$HISTCONTROL" != "" ] ; then
+	HISTCONTROL="$HISTCONTROL:$LOCAL_HISTCONTROL"
+else
+	HISTCONTROL="$LOCAL_HISTCONTROL"
+fi
+#}}}
+
+#{{{HISTORY: IGNORE
+if [ "$HISTIGNORE" != "" ] ; then
+	HISTIGNORE="$HISTIGNORE:$LOCAL_HISTIGNORE"
+else
+	HISTIGNORE="$LOCAL_HISTIGNORE"
+fi
+#}}}
+
+#{{{Correction de droit le fichier d'historique
+test -f $HOME/.bash_history && chmod 600 $HOME/.bash_history
+#}}}
+
+#}}}
+#
+
+#{{{
+LANG=en_US.UTF-8
+LC_ALL=en_US.UTF-8
+
+#{{{export des variables définies
+export HOSTNAME INPUTRC NLSPATH MANPATH MYSQL_PS1 LESS MANPAGER PAGER GREP_OPTIONS WINEPREFIX HISTTIMEFORMAT HISTCONTROL HISTIGNORE HISTSIZE EDITOR CFLAGS HISTFILESIZE CXXFLAGS PATH PYTHONSTARTUP MYSQL_PS1 LANG LC_ALL
+#}}}
+
+#}}}
+
+#{{{Chargement des snippets
+if [ -d /etc/UTILS.d ] ; then
+	for SNIPPET in $(find /etc/UTILS.d -maxdepth 1 ! -name '.*' -type f) ; do
+		test -x $SNIPPET && $SNIPPET
+		test ! -x $SNIPPET && source $SNIPPET
+	done
+fi
+#}}}
+
+#{{{Gestion du nom/alias de la machine 
+if [ -f $HOME/.hostids ] ; then
+ 	PROMPT_HOST=$(awk -F, "/$(hostname)/ {print \$2}" $HOME/.hostids)
+fi
+if [ "$PROMPT_HOST" = "" ] ; then
+	PROMPT_HOST="$(hostname)"
+fi
+#}}}
+
+#{{{Gestion du prompt avec ou sans sudo 
+if [ "$LOGIN_MODE" != "NON-INTERACTIF" ] ; then
+	if [ "$SUDO_USER" != "" ] ; then
+		SUDO_CURRENT_USER="$(id -un)"
+		PROMPT="[$SUDO_USER$RED($SUDO_CURRENT_USER)$NORMAL@$PROMPT_HOST \w]> "
+	else
+    if [ -r /etc/bash_completion.d/git ] ; then
+		  PROMPT='[$USER@$PROMPT_HOST \w$(__git_ps1 "(%s)")]> '
+    else
+		  PROMPT='[$USER@$PROMPT_HOST \w]> '
+    fi
+	fi
+	export PS1="$PROMPT"
+	export PROMPT_COMMAND="history -a"
+fi
+#}}}
+
+#{{{Création du répertoire $HOME/.ssh/.controlmaster
+mkdir -p $HOME/.ssh/.controlmaster
+#}}}
+
+#{{{Config pour les machines Solaris 
+if [ "$(uname -s)" = "SunOS" ] ; then
+	export SHELL=/usr/local/bin/bash
+	if [ "$BASH_COMPLETION" = "" ] ; then
+		BASH_COMPLETION="${BASH_COMPLETION:=/produits/bash_completion/bash_completion}"
+		BASH_COMPLETION_DIR="${BASH_COMPLETION_DIR:=/produits/bash_completion/bash_completion.d}"
+		test -f $BASH_COMPLETION && source $BASH_COMPLETION
+	fi
+  export TERM="xterm"
+fi
+#}}}
+
+#{{{ Config pour les machines Linux 
+if [ "$(uname -s)" = "Linux" ] ; then
+
+  export TERM="xterm-256color"
+#{{{Les codes couleurs
+	 export BOLD=$(tput bold)
+	 export LINE=$(tput smul)
+	 export E_ULINE=$(tput rmul)
+	 export LIGHBLEU=$(tput setaf 4)
+	 export BLUE=$BOLD$(tput setaf 4)
+	 export LIGHTRED=$(tput setaf 1)
+	 export LIGHTGREEN=$BOLD$(tput setaf 2)
+	 export GREEN=$(tput setaf 2)
+	 export CIAN=$(tput setaf 6)
+	 export YELLOW=$BOLD$(tput setaf 3)
+	 export KAKI=$(tput setaf 3)
+	 export PINK=$(tput setaf 5)
+	 export GREY=$(tput setaf 7)
+#}}}
+
+#{{{Env spécifique à Linux
+	 export WINEPREFIX="/opt/Wine/windows"
+#}}}
+
+#{{{Gestion de SSH-AGENT et GPG-AGENT
+	if [ "$SUDO_USER" = "" ] ; then
+      if [ "$SSH_CONNECTION" = "" ] ; then
+        if [ "$(which ssh-keys)" != "" ] ; then
+          source "$(which ssh-keys)" > /dev/null 2>&1
+          source $HOME/.keychain/"$(hostname)"-sh
+        fi
+      fi
+	fi
+#}}}
+
+#{{{ Gestion du brower Web 
+if [ "$KDE_FULL_SESSION" = "true" ] ; then
+	export BROWSER=/usr/bin/konqueror-browser
+else
+  export BROWSER=/usr/bin/lynx
+fi
+#}}}
+fi
+#}}}
+
+fi
+#}}}
+
+#{{{host specific settings
+
+# {{{phoenix
+if [ "$(hostname)" = "phoenix" ] ; then
+  export BROWSER="firefox"
+  export COLORFGBG="white;black"
+fi
+#}}}
+#}}}
+
+#{{{Suppresion des variable d'environnement inutiles
+unset LOCAL_PROMPT_COMMAND LOCAL_HISTCONTROL MY_PROMPT SUDO_CURRENT_USER LOGIN_MODE PROMPT LOCAL_HISTIGNORE LOCAL_HISTIGNORE SNIPPET
+#}}}

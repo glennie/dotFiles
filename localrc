@@ -1,0 +1,289 @@
+#vim: set ai syntax=sh si encoding=utf8:
+
+#{{{La  machine est Merlin
+if [ "$(hostname)" = "merlin" ] ; then
+
+#{{{Variables
+DEB_MAIL="glennie@glennie.fr"
+DEBFULLNAME="Glennie Vignarajah"
+#}}}
+
+#{{{Les fonctions
+removedieze()
+#{{{ Cette procédure renomme les fichiers en remplaçant les # par _ 
+{
+	#rename -n 's/#/_/g' /data/miscs/emule/*
+	rename  's/#/_/g' /data/miscs/emule/* && echo "# are removed"
+}
+#}}}
+
+saveKde()
+#{{{ Procédure de sauvegarde de ~/.kde 
+{
+	echo -n "cd ~/.kde/share; "
+	echo " find . | egrep -v 'akregator|amarok|kopete|ktorrent|knode' | cpio -oaB | bzip2 > /tmp/kde-config-$(date -u +%d-%m-%Y).cpi.bz2 ; echo \$?"
+}
+#}}}
+
+amule_min()
+#{{{ Gestion de priorité minimal du process Amule 
+{
+  local PID=$(pidof /usr/bin/amule)
+  if [ "$PID" != "" ] ; then
+	 echo "Renicing Amule to mininum...."
+	 ionice -c3 -p"$PID"
+  else
+	 echo "Amule is not running..."
+  fi
+}
+#}}}
+
+amule_normal()
+#{{{ Gestion de priorité normal du process Amule 
+{
+  local PID=$(pidof /usr/bin/amule)
+  if [ "$PID" != "" ] ; then
+	 echo "Renicing Amule to normal...."
+	 ionice -c2 -p"$PID" -n7
+  else
+	 echo "Amule is not running..."
+  fi
+}
+#}}}
+
+netconsole()
+#{{{ Accès à la console par le réseau
+{
+	netcat -u -l -p 4444
+}
+#}}}
+
+stopAmule()
+#{{{ Procédure d'arrêt d'amule daemon et démarrage d'amule avec UI 
+{
+	 ps -ef | grep amule | grep -v grep
+   killall amuled 2> /dev/null ; sleep 5 ;  killall amuled > /dev/null 
+   killall amuled 2> /dev/null ; sleep 5 ;  rm -f /home/amule/.aMule/muleLock; rm -f ~/.aMule/server.met; rm -f ~/.aMule/muleLock; cd  /tmp/ ; nohup nice --adjustment=18 /usr/bin/amule &
+}
+#}}}
+fi
+#}}}
+#}}}
+
+#{{{La machine est Garp
+if [ "$(hostname)" = "garp" ] ; then
+
+#{{{Variables
+export SMTP_SERVER=merlin
+alias CheckSMTP='ssh $SMTP_SERVER checkSMTP'
+alias CheckSMTPAcrie='ssh acrie checkSMTP'
+alias CheckSMTPMerlin='checkSMTP glennie@glennie.fr'
+#}}}
+
+#{{{Fonctions
+LOGCHECK()
+#{{{Déplacement dans le répertoire logcheck
+{
+	cd /opt/boulot/scripts/logcheck/
+}
+#}}}
+
+SA()
+#{{{Déplacement dans le répertoire contenant les régles SA
+{
+	cd /opt/boulot/scripts/sa
+}
+#}}}
+
+SCRIPTS()
+#{{{Déplacement dans le répertoire contenant les scripts
+{
+	cd /opt/boulot/scripts/
+}
+#}}}
+
+LOGROTATE()
+#{{{Déplacement dans le répertoire contenant les régles de logrotate
+{
+	cd /opt/boulot/scripts/logrotate
+}
+#}}}
+
+spamstats()
+#{{{Préparation de création des stats SA
+{
+  mv /boulot/mails/pop/.quarantaine.directory/.Spam.directory/Stats/cur/* /boulot/mails/pop/.quarantaine.directory/.Spam.directory/Stats/cur/
+  rm "/boulot/mails/pop/.quarantaine.directory/.Spam.*" "/boulot/mails/pop/.quarantaine.directory/.Spam.directory/.Stats.index*"
+}
+#}}}
+
+SVN()
+#{{{Mise à jour du repository SVN et déplacement dans le répertoire correspondant
+{
+	cd /boulot/svn/exploit/
+	svn update
+}
+#}}}
+
+Get_Subjects_Spams()
+#{{{Affichage du sujet des spams
+{
+  echo "Les spams non detectés:"
+  local FILE=/tmp/.SPAM_MASS_CHECK_FILE
+  if [ -s $FILE ] ; then 
+	 awk '{print $2}' $FILE | xargs -l1 -iTOTO grep -H ^Subject: TOTO 2> /dev/null
+  else
+	echo "$FILE est vide"
+  fi
+}
+#}}}
+
+Get_Subjects_Hams()
+#{{{Affichage des sujets de hams tagés en spam
+{
+  echo "Les Hams mal taggés:"
+  local FILE=/tmp/.HAM_MASS_CHECK_FILE
+  if [ -s $FILE ] ; then
+	 awk '{print $2}' $FILE | xargs -l1 -iTOTO grep -H ^Subject: TOTO 2> /dev/null
+  else
+	 echo "$FILE est vide"
+  fi
+}
+#}}}
+
+Annuaire()
+#{{{Annuaire de l'ATIH
+{
+  kpdf /boulot/miscs/docs/annuaire.pdf &
+}
+#}}}
+#}}}
+fi
+#}}}
+
+#{{{Les machines Garp et Merlin
+if [ "$(hostname)" = "garp" -o "$(hostname)" = "merlin" ] ; then
+#{{{Les fonctions
+LoadKeys()
+#{{{Chargement des clés SSH
+{
+  test -f $HOME/.keychain/"$(hostname)"-sh && source $HOME/.keychain/"$(hostname)"-sh
+  LOADED_KEYS="$(ssh-add -l | awk '{print $3}')"
+  if [ "$LOADED_KEYS" != "" ] ; then
+	echo -en "\n\n"
+	for KEY in $LOADED_KEYS ; do
+		echo "* $(basename $KEY) is loaded and useable."
+	done
+  else
+	echo "No useable keys found."
+  fi
+}
+#}}}
+
+ListKeys()
+#{{{Affichage des clés ssh disponibles
+{
+  source $(which ssh-keys NO_LOAD) > /dev/null 2>&1
+  LOADED_KEYS="$(ssh-add -l | awk '{print $3}')"
+  if [ "$LOADED_KEYS" != "" ] ; then
+	echo -en "\n\n"
+	for KEY in $LOADED_KEYS ; do
+		echo "* $(basename $KEY) is loaded and useable."
+	done
+  else
+	echo "No useable keys found."
+  fi
+}
+#}}}
+
+noproxy()
+#{{{Suppression des varibles proxy
+{
+  unset HTTP_PROXY HTTPS_PROXY http_proxy ftp_proxy FTP_PROXY
+}
+#}}}
+
+LoadLastURLs()
+#{{{ Fonction permettant charger les urls sauvegardées
+{
+	if [ "$1" = "" ]  ; then
+		TIME="now-10minutes"
+	else
+		TIME="now-$1minutes"
+	fi
+
+	if [ "$2" = "" ] ; then
+		SAVED_URLS_FILE=/tmp/.konquiURLS-$USER
+	else
+		SAVED_URLS_FILE="$2"
+	fi
+
+	FROM_TIMESTAMP="$(date --date="$TIME" '+%s')"
+	for URL in $(awk "{if (\$2 >= \$FROM_TIMESTAMP) {print $NF}}" $SAVED_URLS_FILE | sort -nu -k2 | awk '{print $3}') ; do
+			$BROWSER $URL NO_SAVE; sleep 2
+		done
+}	
+#}}}
+
+FlashPlayerStop()
+#{{{ Arrêt des process Flash 
+{	
+
+	for FLASH_PROCESS in /usr/bin/kde4-gnash /usr/bin/kde-gnash /usr/lib/nspluginwrapper/i386/linux/npviewer.bin /usr/bin/nspluginviewer ; do
+		while [ "$(pgrep -f $FLASH_PROCESS)" != "" ] ; do
+			kill	-9 $( pgrep -f $FLASH_PROCESS)
+		done
+		echo "Arrêt de $(basename $FLASH_PROCESS)."
+	done
+}
+#}}}
+
+KillKioProcess()
+#{{{Kill des processa KIO
+{
+   killall -9 -I  -r '.*kio_.*'
+}
+#}}}
+
+FPRenice()
+#{{{Modification des priporités des process Flash
+{
+  FP_PIDS="$(lsof -n | grep flashplayer | grep -v grep | awk '/glennie/ {print $2}')"
+  for FP_PID in $FP_PIDS; do
+    if [ "$FP_PID" != "" ] ; then
+      ionice -p $FP_PID -n 0 -c 2
+      echo "Pid $FP_PID reniced"
+    fi
+  done
+}
+#}}}
+
+scanspam()
+#{{{ Procédure de scan antispam d'un mail
+{
+ if [ "$1" != ""  -a -f "$1" ] ; then
+  cat "$1" | su - amavis -c "spamassassin -t"
+ fi
+}
+#}}}
+
+fi
+#}}}
+#}}}
+
+#{{{Pour toutes les machines
+
+rdf()
+#{{{Affiche la tille des répertoires triés
+{	
+  if [ "$1" = "" ] ; then
+    local MY_DIR=$(pwd)
+   else
+    local MY_DIR="$1"
+   fi
+
+ sudo  du -k "$MY_DIR" | sort -n | awk 'BEGIN{ pref[1]="K"; pref[2]="M"; pref[3]="G";} { total = total + $1; x = $1; y = 1; while( x > 1024 ) { x = (x + 1023)/1024; y++; } printf("%g%s\t%s\n",int(x*10)/10,pref[y],$2); } END { y = 1; while( total > 1024 ) { total = (total + 1023)/1024; y++; } printf("Total: %g%s\n",int(total*10)/10,pref[y]); }'
+}
+#}}}
+
+#}}}
